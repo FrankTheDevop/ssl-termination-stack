@@ -1,0 +1,40 @@
+version: '3.5'
+services:
+  system_haproxy:
+    image: 'dockercloud/haproxy:1.6.6'
+    depends_on:
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    environment:
+      - CERT_FOLDER=/haproxy
+      - DOCKER_HOST=127.0.0.1
+      - 'EXTRA_GLOBAL_SETTINGS="debug"'
+      - 'STATS_AUTH=$user:$pw'
+      - 'STATS_PORT=1936'
+      - DOCKER_TLS_VERIFY
+      - DOCKER_HOST
+      - DOCKER_CERT_PATH
+    volumes:
+      - system_haproxy-data:/haproxy
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '443:443'
+      - '1936:1936'
+     
+  web:
+    image: 'dockercloud/hello-world:v1.0.0-frank'
+    hostname: '{{ .Service.Name }}-{{ .Task.Slot }}'
+    environment:
+      - SERVICE_PORTS=$yourport
+      - FORCE_SSL=yes
+      - SSL_CERT=/haproxy/$crtificatename.pem
+      - 'VIRTUAL_HOST=https://$yourFQDN'
+
+volumes:
+  system_haproxy-data:
+    external: true
